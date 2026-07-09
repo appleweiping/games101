@@ -10,9 +10,9 @@ INC="-Ithird_party/eigen -Ithird_party -Icommon"
 FLAGS="-std=c++17 -O2 -fopenmp -static-libgcc -static-libstdc++"
 mkdir -p build
 
-build_one() { # <id> <dir>
+build_one() { # <id> <dir> [extra .cpp sources...]
   echo ">> building $1 ($2)"
-  g++ $FLAGS $INC "assignments/$2/main.cpp" common/stb_impl.cpp -o "build/$1.exe"
+  g++ $FLAGS $INC "assignments/$2/main.cpp" "${@:3}" common/stb_impl.cpp -o "build/$1.exe"
 }
 
 build_one a0 a0_transform
@@ -23,4 +23,5 @@ build_one a4 a4_bezier
 build_one a5 a5_whitted
 build_one a6 a6_bvh
 build_one a7 a7_pathtracing
+build_one a8 a8_rope assignments/a8_rope/rope.cpp
 echo "All assignments built into build/"

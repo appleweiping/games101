@@ -1,0 +1,26 @@
+GAMES101 Assignment 8 - mass-spring rope, measured results
+==========================================================
+config: 21 nodes, node_mass=1, k=500, gravity=(0,-9.8), dt=0.01, steps=20000, pinned={0,20} (both ends)
+
+explicit (forward) Euler, no damping  -> UNSTABLE
+  max|disp|>10   at step 120
+  max|disp|>1e3  at step 175
+  max|disp|>1e6  at step 247
+  non-finite     at step 587
+  final max|disp| = 6.36744e+18  (rope explodes)
+
+semi-implicit (symplectic) Euler, no damping -> STABLE / BOUNDED
+  max|disp| over 20000 steps = 3.30869  (finite=yes)
+
+semi-implicit Euler, damping=2 -> SETTLES to catenary
+  tip (midpoint) = (5.61248e-08, -1.76586)
+  sag = 1.76586, final max speed = 5.09421e-06
+
+Verlet, damping=0.002 -> SETTLES to catenary
+  tip (midpoint) = (-5.00284e-07, -1.76587)
+  sag = 1.76587, final max speed = 5.3312e-05
+
+images: a8_rope_explicit_unstable.png (grey=initial, red=diverging),
+        a8_rope_semi_implicit.png (green=settled catenary),
+        a8_rope_verlet.png (blue=settled catenary),
+        a8_rope_compare.png (red exploding vs green settled).

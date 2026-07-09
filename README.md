@@ -1,21 +1,24 @@
 # GAMES101 — Introduction to Computer Graphics
 
-> All eight programming assignments of **GAMES101** (Lingqi Yan, UC Santa Barbara),
-> implemented from scratch as **CPU / software renderers** in C++ — an independent,
-> from-skeleton build that is part of a [csdiy.wiki](https://csdiy.wiki/) full-catalog effort.
+> All nine programming assignments of **GAMES101** (Lingqi Yan, UC Santa Barbara),
+> implemented from scratch as **CPU / software renderers + a mass-spring simulator** in
+> C++ — an independent, from-skeleton build that is part of a
+> [csdiy.wiki](https://csdiy.wiki/) full-catalog effort.
 
 ![status](https://img.shields.io/badge/status-complete-brightgreen)
+![assignments](https://img.shields.io/badge/assignments-9%20(A0%E2%80%93A8)-brightgreen)
 ![language](https://img.shields.io/badge/C%2B%2B17-informational)
 ![license](https://img.shields.io/badge/license-MIT-blue)
 
 ## Overview
 
 GAMES101 walks through the full modern graphics pipeline: transforms → rasterization →
-shading → geometry → ray tracing → global illumination. This repo implements **all eight
-assignments (A0–A7)** as real, self-contained software renderers. Everything runs on the
-CPU and writes an actual PNG (or measured numbers) to `results/` — no GPU, no OpenCV highgui,
-no fabricated images. Linear algebra uses **Eigen** (as in the official framework); image
-load/save uses the header-only **stb** libraries in place of OpenCV, so it renders headless.
+shading → geometry → ray tracing → global illumination → physical simulation. This repo
+implements **all nine assignments (A0–A8)** as real, self-contained software: eight CPU
+renderers plus a headless mass-spring rope simulator. Everything runs on the CPU and writes
+an actual PNG (or measured numbers) to `results/` — no GPU, no OpenCV highgui, no fabricated
+images. Linear algebra uses **Eigen** (as in the official framework); image load/save uses
+the header-only **stb** libraries in place of OpenCV, so it renders headless.
 
 ## Results (measured on Windows, AMD CPU, 16 threads, g++ 14.2 `-O2`)
 
@@ -29,6 +32,7 @@ load/save uses the header-only **stb** libraries in place of OpenCV, so it rende
 | A5 | Whitted RT | ray-sphere/triangle, Fresnel reflect+refract, shadows | 1280×960, recursion depth ≤ 5, ~1.6 s |
 | A6 | BVH | median-split BVH vs brute force | **~195–470× speed-up** (identical hits), build 11711 nodes / depth 13 |
 | A7 | Path tracing | Cornell box, next-event estimation, Russian roulette | 512×512 @ **256 spp** in ~40 s (16 threads) |
+| A8 | Mass-spring rope | Euler (explicit/semi-implicit) + Verlet, 21-node rope, both ends pinned | explicit **→ non-finite by step 587** (1e30+); semi-implicit + Verlet both settle to a catenary, **sag = 1.7659** (agree to 4 dp) |
 
 ### A7 — Cornell box (Monte-Carlo global illumination)
 
@@ -36,6 +40,27 @@ load/save uses the header-only **stb** libraries in place of OpenCV, so it rende
 
 Color bleeding (red/green onto the boxes and floor), soft shadows, and diffuse
 inter-reflection — 512×512, 256 samples/pixel.
+
+### A8 — mass-spring rope (质点弹簧系统): integrator stability
+
+![rope: explicit vs stable](results/a8_rope_compare.png)
+![rope: semi-implicit catenary](results/a8_rope_semi_implicit.png)
+
+A rope of 21 point masses + Hooke springs, pinned at **both ends**, hanging under gravity
+(k = 500, dt = 0.01, no substepping). Integrated three ways at *identical* parameters:
+
+- **Explicit (forward) Euler** — **unstable**: energy pumps in every step, so the rope
+  (red, left) blows up — `|disp|` crosses 10 by step 120, 1e6 by step 247, and goes
+  **non-finite (≈1e30) by step 587**.
+- **Semi-implicit (symplectic) Euler** — **stable**: advancing velocity *before* position
+  keeps it bounded forever (max `|disp|` = 3.31 over 20 000 steps, never diverges), and with
+  a little viscous damping it settles into the smooth **catenary** (green).
+- **Verlet** — also settles to the **same** catenary; the two stable integrators agree to
+  **sag = 1.7659** (4 decimal places), an independent cross-check.
+
+The left image overlays the exploding explicit rope (red) on the settled semi-implicit
+catenary (green); grey is the taut starting rope. This is the classic A8 result: explicit
+Euler diverges, semi-implicit Euler and Verlet do not.
 
 ### A5 — Whitted ray tracing &nbsp;·&nbsp; A6 — BVH-accelerated mesh
 
@@ -76,12 +101,13 @@ A2: the green triangle (z=−2) correctly occludes the blue one (z=−5) via the
 - [x] **A5 — Whitted-style ray tracing** — ray-sphere + Möller–Trumbore, mirror/glass with Fresnel, hard shadows.
 - [x] **A6 — BVH** — median-split bounding volume hierarchy with a measured speed-up over brute force.
 - [x] **A7 — Path tracing** — Cornell box, Monte-Carlo global illumination with next-event estimation + Russian roulette.
+- [x] **A8 — Mass-spring rope** — Hooke springs + gravity; explicit/semi-implicit Euler and Verlet integrators, showing explicit Euler diverges while the symplectic and Verlet schemes settle into a catenary.
 
 ## Project structure
 
 ```
 games101/
-├── assignments/          # one folder + main.cpp per assignment (a0..a7)
+├── assignments/          # one folder per assignment (a0..a8); a8 also has rope.h/rope.cpp
 ├── common/               # shared headers
 │   ├── math_utils.hpp    # Eigen typedefs, RNG, helpers
 │   ├── image.hpp         # linear-RGB framebuffer + PNG writer (stb)
@@ -111,13 +137,14 @@ bash scripts/setup_deps.sh          # or: pwsh scripts/setup_deps.ps1
 #    procedural sphere if it is absent, so this is not required.
 bash scripts/fetch_assets.sh
 
-# 3. build all eight assignments -> build/*.exe
+# 3. build all nine assignments -> build/*.exe
 bash scripts/build_all.sh           # or: mingw32-make   (make on Linux)
 
 # 4. run them; each writes its PNG(s)/numbers into results/
 bash scripts/run_all.sh
 #    or individually, e.g.:
 ./build/a7.exe 256                  # path tracer, 256 samples/pixel
+./build/a8.exe                      # rope sim; optional arg = spring stiffness k (default 500)
 ```
 
 > **Windows note:** the build uses `-static-libgcc -static-libstdc++`. Without it, MSYS2's
@@ -143,8 +170,13 @@ Every assignment was run and its output inspected:
 - **A7** direct-only and full renders were compared to localize and fix a real shadow-visibility bug
   (the offset shadow-ray origin broke a squared-distance test, blacking out the red wall); the final
   image shows correct color bleeding and soft shadows.
+- **A8** all three integrators run at *identical* (k, dt, gravity): explicit Euler diverges to
+  **non-finite (~1e30) by step 587** (max `|disp|` > 10 by step 120, > 1e6 by 247), while
+  semi-implicit Euler stays **bounded** (max `|disp|` = 3.31 over 20 000 steps) and both semi-implicit
+  and Verlet independently settle to the **same catenary** — sag **1.7659** to four decimals — a
+  cross-integrator agreement that confirms the physics. Numbers logged to `results/a8_rope.txt`.
 
-All fifteen rendered PNGs are committed under `results/`.
+All nineteen rendered PNGs are committed under `results/` (plus the A8 numeric log).
 
 ## Tech stack
 
@@ -165,6 +197,9 @@ OpenMP (path-tracer threading) · g++ 14.2. CPU-only, software-rendered.
 - BVH construction (centroid median split, AABB slab test) and the order-of-magnitude speed-up it buys.
 - The Monte-Carlo rendering equation: importance sampling the light (next-event estimation),
   hemisphere sampling for indirect bounces, unbiased termination via Russian roulette.
+- Time integration of a mass-spring system and why the update order matters: forward Euler
+  injects energy and blows up, whereas symplectic (semi-implicit) Euler and Verlet are stable —
+  the same rope, dt and stiffness settle into a catenary instead of exploding.
 
 ## Credits & license
 
