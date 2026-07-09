@@ -4,7 +4,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 INC="-Ithird_party/eigen -Ithird_party -Icommon"
-FLAGS="-std=c++17 -O2 -fopenmp"
+# -static-libgcc/-static-libstdc++: the MinGW bfd linker crashes (ld exit 116) on
+# heavily-templated Eigen objects when linking libstdc++ as a DLL; static libstdc++
+# avoids the bad import thunks.  Harmless on Linux/WSL.
+FLAGS="-std=c++17 -O2 -fopenmp -static-libgcc -static-libstdc++"
 mkdir -p build
 
 build_one() { # <id> <dir>

@@ -5,7 +5,9 @@
 # Fetch deps first:  bash scripts/setup_deps.sh   (or scripts/setup_deps.ps1)
 
 CXX      := g++
-CXXFLAGS := -std=c++17 -O2 -fopenmp -Ithird_party/eigen -Ithird_party -Icommon
+# -static-libgcc/-static-libstdc++ works around a MinGW bfd-linker crash (ld exit
+# 116) on heavily-templated Eigen objects; harmless on Linux/WSL.
+CXXFLAGS := -std=c++17 -O2 -fopenmp -static-libgcc -static-libstdc++ -Ithird_party/eigen -Ithird_party -Icommon
 STB      := common/stb_impl.cpp
 BUILD    := build
 
