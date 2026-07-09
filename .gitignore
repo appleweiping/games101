@@ -1,0 +1,21 @@
+# Build artifacts
+/build/
+*.exe
+*.o
+*.obj
+*.out
+
+# Third-party header-only libs — fetched by scripts/setup_deps.* (not our code)
+/third_party/eigen/
+/third_party/stb_image.h
+/third_party/stb_image_write.h
+/third_party/*.tar.gz
+
+# Optional course assets downloaded at runtime
+/assets/
+
+# OS / editor junk
+Thumbs.db
+.DS_Store
+*.swp
+.vscode/
