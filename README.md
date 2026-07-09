@@ -130,6 +130,13 @@ Every assignment was run and its output inspected:
 
 - **A0** matches the analytic result: rotate(45°)·(2,1)=(0.707,2.121), +translate(1,2)=(1.707,4.121).
 - **A2** the near (green, z=−2) triangle occludes the far (blue, z=−5) one; MSAA blends 969 edge pixels.
+- **A3** the `normal` and `bump` shaders now return a **concrete `Vec3f`** rather than a deduced Eigen
+  expression: writing `return (v + Vec3f(1,1,1)) * 0.5f;` from an `auto` lambda kept a dangling reference
+  to the temporary `Vec3f(1,1,1)`, so the caller read garbage (undefined behavior). The normal map came out
+  red/green with **no blue channel** and the bump map rendered as an **all-black silhouette**. Forcing
+  evaluation (`return Vec3f(...)`) fixes both: the normal map is now a smooth rainbow and the bump map shows
+  the texture's height-field creases. Verified deterministic — rendering twice is byte-identical (MinGW
+  g++ 14.2 and WSL2 g++ 13.3).
 - **A4** de Casteljau and the closed-form Bernstein polynomial agree to **1.26e-4 px** over 2000 samples.
 - **A6** BVH and brute-force intersection return **identical hit counts** (326/326 on the sample); BVH is
   ~200–470× faster and matches pixel-for-pixel.

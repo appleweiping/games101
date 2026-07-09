@@ -146,7 +146,10 @@ int main() {
     // --- normal ---
     { Image img(W,H,bg);
       render_mesh(mesh, model, view, proj,
-        [](const Frag& f){ return (f.nrm + Vec3f(1,1,1)) * 0.5f; }, img);
+        // Force evaluation into a concrete Vec3f: returning the raw Eigen
+        // expression (auto) would keep a dangling reference to the temporary
+        // Vec3f(1,1,1), which the caller then reads as garbage (UB).
+        [](const Frag& f){ return Vec3f((f.nrm + Vec3f(1,1,1)) * 0.5f); }, img);
       img.save_png("results/a3_normal.png"); std::printf("  wrote a3_normal.png\n"); }
 
     // --- blinn-phong (flat albedo) ---
@@ -173,7 +176,9 @@ int main() {
             float dv = kh*kn*(tex.height(f.uv.x(), f.uv.y()+1.0f/tex.h) - tex.height(f.uv.x(), f.uv.y()));
             Vec3f ln(-du, -dv, 1.0f);
             Vec3f pn = (TBN*ln).normalized();
-            return (pn + Vec3f(1,1,1)) * 0.5f;
+            // Concrete Vec3f (see a3_normal note): returning the Eigen
+            // expression here would dangle on the Vec3f(1,1,1) temporary.
+            return Vec3f((pn + Vec3f(1,1,1)) * 0.5f);
         }, img);
       img.save_png("results/a3_bump.png"); std::printf("  wrote a3_bump.png\n"); }
 
